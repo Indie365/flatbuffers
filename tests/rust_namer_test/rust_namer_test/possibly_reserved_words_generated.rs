@@ -23,8 +23,8 @@ impl core::fmt::Debug for PossiblyReservedWords {
     f.debug_struct("PossiblyReservedWords")
       .field("follow_", &self.follow_())
       .field("push_", &self.push_())
-      .field("size_", &self.size_())
-      .field("alignment_", &self.alignment_())
+      .field("size", &self.size())
+      .field("alignment", &self.alignment())
       .finish()
   }
 }
@@ -48,7 +48,7 @@ impl<'b> flatbuffers::Push for PossiblyReservedWords {
     type Output = PossiblyReservedWords;
     #[inline]
     unsafe fn push(&self, dst: &mut [u8], _written_len: usize) {
-        let src = ::core::slice::from_raw_parts(self as *const PossiblyReservedWords as *const u8, Self::size());
+        let src = ::core::slice::from_raw_parts(self as *const PossiblyReservedWords as *const u8, <Self as flatbuffers::Push>::size());
         dst.copy_from_slice(src);
     }
 }
@@ -68,14 +68,14 @@ impl<'a> PossiblyReservedWords {
   pub fn new(
     follow_: f32,
     push_: f32,
-    size_: f32,
-    alignment_: f32,
+    size: f32,
+    alignment: f32,
   ) -> Self {
     let mut s = Self([0; 16]);
     s.set_follow_(follow_);
     s.set_push_(push_);
-    s.set_size_(size_);
-    s.set_alignment_(alignment_);
+    s.set_size(size);
+    s.set_alignment(alignment);
     s
   }
 
@@ -141,7 +141,7 @@ impl<'a> PossiblyReservedWords {
     }
   }
 
-  pub fn size_(&self) -> f32 {
+  pub fn size(&self) -> f32 {
     let mut mem = core::mem::MaybeUninit::<<f32 as EndianScalar>::Scalar>::uninit();
     // Safety:
     // Created from a valid Table for this object
@@ -156,7 +156,7 @@ impl<'a> PossiblyReservedWords {
     })
   }
 
-  pub fn set_size_(&mut self, x: f32) {
+  pub fn set_size(&mut self, x: f32) {
     let x_le = x.to_little_endian();
     // Safety:
     // Created from a valid Table for this object
@@ -170,7 +170,7 @@ impl<'a> PossiblyReservedWords {
     }
   }
 
-  pub fn alignment_(&self) -> f32 {
+  pub fn alignment(&self) -> f32 {
     let mut mem = core::mem::MaybeUninit::<<f32 as EndianScalar>::Scalar>::uninit();
     // Safety:
     // Created from a valid Table for this object
@@ -185,7 +185,7 @@ impl<'a> PossiblyReservedWords {
     })
   }
 
-  pub fn set_alignment_(&mut self, x: f32) {
+  pub fn set_alignment(&mut self, x: f32) {
     let x_le = x.to_little_endian();
     // Safety:
     // Created from a valid Table for this object
@@ -203,8 +203,8 @@ impl<'a> PossiblyReservedWords {
     PossiblyReservedWordsT {
       follow_: self.follow_(),
       push_: self.push_(),
-      size_: self.size_(),
-      alignment_: self.alignment_(),
+      size: self.size(),
+      alignment: self.alignment(),
     }
   }
 }
@@ -213,16 +213,16 @@ impl<'a> PossiblyReservedWords {
 pub struct PossiblyReservedWordsT {
   pub follow_: f32,
   pub push_: f32,
-  pub size_: f32,
-  pub alignment_: f32,
+  pub size: f32,
+  pub alignment: f32,
 }
 impl PossiblyReservedWordsT {
   pub fn pack(&self) -> PossiblyReservedWords {
     PossiblyReservedWords::new(
       self.follow_,
       self.push_,
-      self.size_,
-      self.alignment_,
+      self.size,
+      self.alignment,
     )
   }
 }
