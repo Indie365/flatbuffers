@@ -29,12 +29,12 @@
 #include <utility>
 #include <vector>
 
+#include "codegen/idl_namer.h"
 #include "codegen/python.h"
 #include "flatbuffers/code_generators.h"
 #include "flatbuffers/flatbuffers.h"
 #include "flatbuffers/idl.h"
 #include "flatbuffers/util.h"
-#include "idl_namer.h"
 
 namespace flatbuffers {
 namespace python {
@@ -43,52 +43,6 @@ namespace {
 
 typedef std::pair<std::string, std::string> ImportMapEntry;
 typedef std::set<ImportMapEntry> ImportMap;
-
-static Namer::Config PythonDefaultConfig() {
-  return { /*types=*/Case::kKeep,
-           /*constants=*/Case::kScreamingSnake,
-           /*methods=*/Case::kUpperCamel,
-           /*functions=*/Case::kUpperCamel,
-           /*fields=*/Case::kLowerCamel,
-           /*variable=*/Case::kLowerCamel,
-           /*variants=*/Case::kKeep,
-           /*enum_variant_seperator=*/".",
-           /*escape_keywords=*/Namer::Config::Escape::AfterConvertingCase,
-           /*namespaces=*/Case::kKeep,  // Packages in python.
-           /*namespace_seperator=*/".",
-           /*object_prefix=*/"",
-           /*object_suffix=*/"T",
-           /*keyword_prefix=*/"",
-           /*keyword_suffix=*/"_",
-           /*filenames=*/Case::kKeep,
-           /*directories=*/Case::kKeep,
-           /*output_path=*/"",
-           /*filename_suffix=*/"",
-           /*filename_extension=*/".py" };
-}
-
-static Namer::Config kStubConfig = {
-    /*types=*/Case::kKeep,
-    /*constants=*/Case::kScreamingSnake,
-    /*methods=*/Case::kUpperCamel,
-    /*functions=*/Case::kUpperCamel,
-    /*fields=*/Case::kLowerCamel,
-    /*variables=*/Case::kLowerCamel,
-    /*variants=*/Case::kKeep,
-    /*enum_variant_seperator=*/".",
-    /*escape_keywords=*/Namer::Config::Escape::AfterConvertingCase,
-    /*namespaces=*/Case::kKeep,  // Packages in python.
-    /*namespace_seperator=*/".",
-    /*object_prefix=*/"",
-    /*object_suffix=*/"T",
-    /*keyword_prefix=*/"",
-    /*keyword_suffix=*/"_",
-    /*filenames=*/Case::kKeep,
-    /*directories=*/Case::kKeep,
-    /*output_path=*/"",
-    /*filename_suffix=*/"",
-    /*filename_extension=*/".pyi",
-};
 
 // Hardcode spaces per indentation.
 static const CommentConfig def_comment = { nullptr, "#", nullptr };
@@ -591,12 +545,21 @@ class PythonStubGenerator {
   void GenerateEnumStub(std::stringstream &stub, const EnumDef *enum_def,
                         Imports *imports) const {
     stub << "class " << namer_.Type(*enum_def);
-    if (version_.major != 3) stub << "(object)";
+
+    if (version_.major == 3){
+      imports->Import("enum", "IntEnum");
+      stub << "(IntEnum)";
+    }
+    else {
+      stub << "(object)";
+    }
+
     stub << ":\n";
     for (const EnumVal *val : enum_def->Vals()) {
       stub << "  " << namer_.Variant(*val) << ": "
            << ScalarType(enum_def->underlying_type.base_type) << "\n";
     }
+
     if (parser_.opts.generate_object_based_api & enum_def->is_union) {
       imports->Import("flatbuffers", "table");
       stub << "def " << namer_.Function(*enum_def)
@@ -653,7 +616,7 @@ class PythonGenerator : public BaseGenerator {
       : BaseGenerator(parser, path, file_name, "" /* not used */,
                       "" /* not used */, "py"),
         float_const_gen_("float('nan')", "float('inf')", "float('-inf')"),
-        namer_(WithFlagOptions(PythonDefaultConfig(), parser.opts, path),
+        namer_(WithFlagOptions(kConfig, parser.opts, path),
                Keywords(version)) {}
 
   // Most field accessors need to retrieve and test the field offset first,
@@ -2432,7 +2395,7 @@ class PythonGenerator : public BaseGenerator {
     auto field_type = namer_.ObjectType(*ev.union_type.struct_def);
 
     code +=
-        GenIndents(1) + "if unionType == " + union_type + "()." + variant + ":";
+        GenIndents(1) + "if unionType == " + union_type + "." + variant + ":";
     if (parser_.opts.include_dependence_headers) {
       auto package_reference = GenPackageReference(ev.union_type);
       code += GenIndents(2) + "import " + package_reference;
